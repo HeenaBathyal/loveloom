@@ -2,15 +2,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:image_picker/image_picker.dart';
-import 'findthematch.dart';  // Import FindTheMatchPage
+import 'findthematch.dart'; // Import FindMatch page
 import 'editprofile.dart';
-import 'message.dart';  // Import EditProfilePage
+import 'message.dart'; // Import Message page
+import 'explore.dart'; // Import Explore page
 
 class DashboardPage extends StatefulWidget {
   final String? userName;
   final String? profileImagePath;
 
-  const DashboardPage({Key? key, this.userName, this.profileImagePath}) : super(key: key);
+  const DashboardPage({Key? key, this.userName, this.profileImagePath})
+      : super(key: key);
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -61,10 +63,18 @@ class _DashboardPageState extends State<DashboardPage> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2.1),
               boxShadow: [
-                BoxShadow(color: pink.withOpacity(0.17), spreadRadius: 8, blurRadius: 20),
+                BoxShadow(
+                  color: pink.withOpacity(0.17),
+                  spreadRadius: 8,
+                  blurRadius: 20,
+                ),
               ],
             ),
-            child: const Icon(Icons.add, size: 26, color: Colors.white),
+            child: const Icon(
+              Icons.add,
+              size: 26,
+              color: Colors.white,
+            ),
           ),
         ),
         GestureDetector(
@@ -77,10 +87,18 @@ class _DashboardPageState extends State<DashboardPage> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2.1),
               boxShadow: [
-                BoxShadow(color: pink.withOpacity(0.17), spreadRadius: 8, blurRadius: 20),
+                BoxShadow(
+                  color: pink.withOpacity(0.17),
+                  spreadRadius: 8,
+                  blurRadius: 20,
+                ),
               ],
             ),
-            child: const Icon(Icons.person, size: 26, color: Colors.white),
+            child: const Icon(
+              Icons.person,
+              size: 26,
+              color: Colors.white,
+            ),
           ),
         ),
       ],
@@ -106,9 +124,15 @@ class _DashboardPageState extends State<DashboardPage> {
           child: CircleAvatar(
             radius: 87,
             backgroundColor: Colors.white,
-            backgroundImage: (uploadedImagePath != null) ? FileImage(File(uploadedImagePath!)) : null,
+            backgroundImage: (uploadedImagePath != null)
+                ? FileImage(File(uploadedImagePath!))
+                : null,
             child: (uploadedImagePath == null)
-                ? Icon(Icons.person, size: 70, color: Colors.grey[400])
+                ? Icon(
+              Icons.person,
+              size: 70,
+              color: Colors.grey[400],
+            )
                 : null,
           ),
         ),
@@ -117,7 +141,11 @@ class _DashboardPageState extends State<DashboardPage> {
           child: CircleAvatar(
             radius: 25,
             backgroundColor: pink,
-            child: const Icon(Icons.favorite, color: Colors.white, size: 27),
+            child: const Icon(
+              Icons.favorite,
+              color: Colors.white,
+              size: 27,
+            ),
           ),
         ),
       ],
@@ -135,7 +163,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   Row(
                     children: const [
-                      Icon(Icons.menu, size: 28, color: Colors.black87),
+                      Icon(
+                        Icons.menu,
+                        size: 28,
+                        color: Colors.black87,
+                      ),
                       SizedBox(width: 12),
                       Text(
                         "New Delhi",
@@ -227,7 +259,8 @@ class _DashboardPageState extends State<DashboardPage> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const FindTheMatchPage()),
+                              MaterialPageRoute(
+                                  builder: (_) => const FindTheMatchPage()),
                             );
                           },
                           child: const Text(
@@ -251,7 +284,13 @@ class _DashboardPageState extends State<DashboardPage> {
                             elevation: 5,
                             padding: const EdgeInsets.symmetric(vertical: 19),
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ExplorePage()),
+                            );
+                          },
                           child: const Text(
                             'Explore',
                             style: TextStyle(
@@ -291,39 +330,53 @@ class _DashboardPageState extends State<DashboardPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                const Icon(Icons.home, size: 26, color: Colors.white),
-                const Icon(Icons.explore, size: 26, color: Colors.white),
-                const Icon(Icons.search, size: 30, color: Colors.white),
-
+                const Icon(
+                  Icons.home,
+                  size: 28,
+                  color: Colors.white,
+                ),
+                const Icon(
+                  Icons.explore,
+                  size: 28,
+                  color: Colors.white,
+                ),
+                const Icon(
+                  Icons.search,
+                  size: 30,
+                  color: Colors.white,
+                ),
                 IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline, size: 26, color: Colors.white),
+                  icon: const Icon(
+                    Icons.chat_bubble_outline,
+                    size: 28,
+                    color: Colors.white,
+                  ),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const MessagePage()),
+                      MaterialPageRoute(
+                          builder: (_) => const MessagePage()),
                     );
                   },
                 ),
-                const Icon(Icons.person, size: 26, color: Colors.white),
+                const Icon(
+                  Icons.person,
+                  size: 28,
+                  color: Colors.white,
+                ),
               ],
             ),
-            // Horizontal selection indicator under search icon
             Positioned(
               bottom: 10,
               left: 0,
               right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 64,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  ),
-                ],
+              child: Container(
+                width: 64,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(5),
+                ),
               ),
             ),
           ],
