@@ -1,18 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:dotted_border/dotted_border.dart';
-import 'package:image_picker/image_picker.dart';
-import 'findthematch.dart'; // Import FindMatch page
+import 'findthematch.dart';  // Import FindTheMatchPage
 import 'editprofile.dart';
-import 'message.dart'; // Import Message page
-import 'explore.dart'; // Import Explore page
+import 'message.dart';  // Import EditProfilePage
 
 class DashboardPage extends StatefulWidget {
   final String? userName;
   final String? profileImagePath;
+  final String? userLocation;
 
-  const DashboardPage({Key? key, this.userName, this.profileImagePath})
-      : super(key: key);
+  const DashboardPage({
+    Key? key,
+    this.userName,
+    this.profileImagePath,
+    this.userLocation,
+  }) : super(key: key);
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -20,11 +22,15 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   String? uploadedImagePath;
+  String? userName;
+  String? userLocation;
 
   @override
   void initState() {
     super.initState();
     uploadedImagePath = widget.profileImagePath;
+    userName = widget.userName;
+    userLocation = widget.userLocation;
   }
 
   void _openEditProfile() async {
@@ -32,16 +38,19 @@ class _DashboardPageState extends State<DashboardPage> {
       context,
       MaterialPageRoute(
         builder: (_) => EditProfilePage(
-          name: widget.userName ?? 'User',
-          dob: '',
-          initialName: widget.userName,
+          name: userName ?? 'User',
+          initialImage: uploadedImagePath,
+          initialLocation: userLocation,
           initialDob: '',
         ),
       ),
     );
+
     if (result != null && result is Map<String, dynamic>) {
       setState(() {
         uploadedImagePath = result['image'] ?? uploadedImagePath;
+        userName = result['name'] ?? userName;
+        userLocation = result['location'] ?? userLocation;
       });
     }
   }
@@ -53,29 +62,19 @@ class _DashboardPageState extends State<DashboardPage> {
     final topRightIcons = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(right: 10),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: pink,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2.1),
-              boxShadow: [
-                BoxShadow(
-                  color: pink.withOpacity(0.17),
-                  spreadRadius: 8,
-                  blurRadius: 20,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.add,
-              size: 26,
-              color: Colors.white,
-            ),
+        Container(
+          width: 44,
+          height: 44,
+          margin: const EdgeInsets.only(right: 10),
+          decoration: BoxDecoration(
+            color: pink,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2.1),
+            boxShadow: [
+              BoxShadow(color: pink.withOpacity(0.17), spreadRadius: 8, blurRadius: 20),
+            ],
           ),
+          child: const Icon(Icons.add, size: 26, color: Colors.white),
         ),
         GestureDetector(
           onTap: _openEditProfile,
@@ -87,18 +86,10 @@ class _DashboardPageState extends State<DashboardPage> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2.1),
               boxShadow: [
-                BoxShadow(
-                  color: pink.withOpacity(0.17),
-                  spreadRadius: 8,
-                  blurRadius: 20,
-                ),
+                BoxShadow(color: pink.withOpacity(0.17), spreadRadius: 8, blurRadius: 20),
               ],
             ),
-            child: const Icon(
-              Icons.person,
-              size: 26,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.person, size: 26, color: Colors.white),
           ),
         ),
       ],
@@ -115,37 +106,25 @@ class _DashboardPageState extends State<DashboardPage> {
             color: pink.withOpacity(0.12),
           ),
         ),
-        DottedBorder(
-          dashPattern: const [6, 5],
-          strokeWidth: 3,
-          color: pink,
-          borderType: BorderType.Circle,
-          padding: EdgeInsets.zero,
-          child: CircleAvatar(
-            radius: 87,
-            backgroundColor: Colors.white,
-            backgroundImage: (uploadedImagePath != null)
-                ? FileImage(File(uploadedImagePath!))
-                : null,
-            child: (uploadedImagePath == null)
-                ? Icon(
-              Icons.person,
-              size: 70,
-              color: Colors.grey[400],
-            )
-                : null,
-          ),
+        CircleAvatar(
+          radius: 87,
+          backgroundColor: Colors.white,
+          // Display network image if path is URL, else FileImage if local path, else default icon
+          backgroundImage: (uploadedImagePath != null)
+              ? (uploadedImagePath!.startsWith('http')
+                  ? NetworkImage(uploadedImagePath!)
+                  : FileImage(File(uploadedImagePath!))) as ImageProvider
+              : null,
+          child: (uploadedImagePath == null)
+              ? Icon(Icons.person, size: 70, color: Colors.grey[400])
+              : null,
         ),
         Positioned(
           bottom: 15,
           child: CircleAvatar(
             radius: 25,
             backgroundColor: pink,
-            child: const Icon(
-              Icons.favorite,
-              color: Colors.white,
-              size: 27,
-            ),
+            child: const Icon(Icons.favorite, color: Colors.white, size: 27),
           ),
         ),
       ],
@@ -162,16 +141,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
-                    children: const [
-                      Icon(
-                        Icons.menu,
-                        size: 28,
-                        color: Colors.black87,
-                      ),
-                      SizedBox(width: 12),
+                    children: [
+                      const Icon(Icons.menu, size: 28, color: Colors.black87),
+                      const SizedBox(width: 12),
                       Text(
-                        "New Delhi",
-                        style: TextStyle(
+                        userLocation ?? "New Delhi",
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: Colors.black54,
@@ -201,7 +176,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         children: <TextSpan>[
                           TextSpan(
-                            text: widget.userName ?? "User",
+                            text: userName ?? "User",
                             style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w700,
@@ -259,8 +234,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                  builder: (_) => const FindTheMatchPage()),
+                              MaterialPageRoute(builder: (_) => const FindTheMatchPage()),
                             );
                           },
                           child: const Text(
@@ -284,13 +258,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             elevation: 5,
                             padding: const EdgeInsets.symmetric(vertical: 19),
                           ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const ExplorePage()),
-                            );
-                          },
+                          onPressed: () {},
                           child: const Text(
                             'Explore',
                             style: TextStyle(
@@ -330,53 +298,38 @@ class _DashboardPageState extends State<DashboardPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                const Icon(
-                  Icons.home,
-                  size: 28,
-                  color: Colors.white,
-                ),
-                const Icon(
-                  Icons.explore,
-                  size: 28,
-                  color: Colors.white,
-                ),
-                const Icon(
-                  Icons.search,
-                  size: 30,
-                  color: Colors.white,
-                ),
+                const Icon(Icons.home, size: 26, color: Colors.white),
+                const Icon(Icons.explore, size: 26, color: Colors.white),
+                const Icon(Icons.search, size: 30, color: Colors.white),
+
                 IconButton(
-                  icon: const Icon(
-                    Icons.chat_bubble_outline,
-                    size: 28,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.chat_bubble_outline, size: 26, color: Colors.white),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const MessagePage()),
+                      MaterialPageRoute(builder: (_) => const MessagePage()),
                     );
                   },
                 ),
-                const Icon(
-                  Icons.person,
-                  size: 28,
-                  color: Colors.white,
-                ),
+                const Icon(Icons.person, size: 26, color: Colors.white),
               ],
             ),
             Positioned(
               bottom: 10,
               left: 0,
               right: 0,
-              child: Container(
-                width: 64,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(5),
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:loveloom/services/api_service.dart'; // Use your correct import path
 
 class EditProfilePage extends StatefulWidget {
   final String? name;
@@ -17,7 +19,9 @@ class EditProfilePage extends StatefulWidget {
     this.initialImage,
     this.initialLocation,
     this.initialGalleryImages,
-    this.initialNotes, required String initialDob, String? initialName,
+    this.initialNotes,
+    required String initialDob,
+    String? initialName,
   }) : super(key: key);
 
   @override
@@ -35,6 +39,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _locationController;
 
   final ImagePicker _picker = ImagePicker();
+  final ApiService _apiService = ApiService();
+
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -72,30 +79,31 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void _addNote() {
     String note = "";
     showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Add Note", style: TextStyle(color: pink)),
-            content: TextField(
-              autofocus: true,
-              decoration: const InputDecoration(hintText: "Write your note here"),
-              onChanged: (value) => note = value,
-            ),
-            actions: [
-              TextButton(
-                child: Text("Add", style: TextStyle(color: pink, fontWeight: FontWeight.bold)),
-                onPressed: () {
-                  if (note.trim().isNotEmpty) {
-                    setState(() {
-                      notes.add(note.trim());
-                    });
-                  }
-                  Navigator.of(context).pop();
-                },
-              )
-            ],
-          );
-        });
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Add Note", style: TextStyle(color: pink)),
+          content: TextField(
+            autofocus: true,
+            decoration: const InputDecoration(hintText: "Write your note here"),
+            onChanged: (value) => note = value,
+          ),
+          actions: [
+            TextButton(
+              child: Text("Add", style: TextStyle(color: pink, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                if (note.trim().isNotEmpty) {
+                  setState(() {
+                    notes.add(note.trim());
+                  });
+                }
+                Navigator.of(context).pop();
+              },
+            )
+          ],
+        );
+      },
+    );
   }
 
   Widget _profileAvatar() {
@@ -247,13 +255,59 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  Future<void> _saveProfile() async {
+    if (_isSaving) return; // Prevent multiple taps
+    setState(() => _isSaving = true);
+
+    try {
+      String? uploadedImageUrl;
+
+      if (imagePath != null && !imagePath!.startsWith('http')) {
+        // Upload image file only if locally picked (not already URL)
+        uploadedImageUrl = await _apiService.uploadProfileImage(File(imagePath!));
+      } else {
+        uploadedImageUrl = imagePath; // Already uploaded image URL or null
+      }
+
+      final success = await _apiService.updateProfile(
+        name: _nameController.text.trim(),
+        dob: _dobController.text.trim(),
+        location: _locationController.text.trim(),
+        profileImagePath: uploadedImageUrl,
+        galleryImages: galleryImages,
+        notes: notes,
+      );
+
+      if (success) {
+        Navigator.pop(context, {
+          'image': uploadedImageUrl,
+          'name': _nameController.text.trim(),
+          'dob': _dobController.text.trim(),
+          'location': _locationController.text.trim(),
+          'galleryImages': galleryImages,
+          'notes': notes,
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile. Please try again.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving profile: $e')),
+      );
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: _bottomBar(),
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(50),
+        preferredSize: const Size.fromHeight(50),
         child: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
@@ -262,24 +316,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
             onPressed: () => Navigator.pop(context),
           ),
           centerTitle: true,
-          title: Text(
+          title: const Text(
             "Edit profile",
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 19, color: Colors.black),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context, {
-                  'image': imagePath,
-                  'name': _nameController.text,
-                  'dob': _dobController.text,
-                  'location': _locationController.text,
-                  'galleryImages': galleryImages,
-                  'notes': notes,
-                });
-              },
+              onPressed: _isSaving ? null : _saveProfile,
               child: Text(
-                "Save",
+                _isSaving ? 'Saving...' : "Save",
                 style: TextStyle(color: pink, fontWeight: FontWeight.bold, fontSize: 16.5),
               ),
             )
@@ -287,12 +332,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       ),
       body: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
-        padding: EdgeInsets.only(bottom: 32),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Center(
               child: Column(
                 children: [
@@ -306,7 +351,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             _inputSection(label: "Location", controller: _locationController),
             _gallerySection(),
             _notesSection(),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
           ],
         ),
       ),

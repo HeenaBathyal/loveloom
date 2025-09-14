@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -27,11 +29,11 @@ class _RegisterPageState extends State<RegisterPage> {
   };
 
   final List<String> days =
-  List.generate(31, (i) => (i + 1).toString().padLeft(2, '0'));
+      List.generate(31, (i) => (i + 1).toString().padLeft(2, '0'));
   final List<String> months =
-  List.generate(12, (i) => (i + 1).toString().padLeft(2, '0'));
+      List.generate(12, (i) => (i + 1).toString().padLeft(2, '0'));
   final List<String> years =
-  List.generate(100, (i) => (DateTime.now().year - i).toString());
+      List.generate(100, (i) => (DateTime.now().year - i).toString());
 
   final Color pink = const Color(0xFFF45B5B);
   final Color gray = const Color(0xFF444444);
@@ -42,6 +44,38 @@ class _RegisterPageState extends State<RegisterPage> {
   String? passwordError;
   String? emailError;
   String? genderError;
+
+  bool _isLoading = false;
+  String? _registerError;
+
+  // Backend URL configured for Android emulator: 10.0.2.2 points to localhost on PC
+  static const String baseUrl = 'http://10.0.2.2:5000/api';
+
+  Future<bool> register({
+    required String name,
+    required String username,
+    required String password,
+    required String email,
+    required String gender,
+    required String dob,
+  }) async {
+    final url = Uri.parse('$baseUrl/auth/register');
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'username': username,
+        'password': password,
+        'email': email,
+        'gender': gender,
+        'dob': dob,
+      }),
+    );
+
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
 
   void _showSuccessDialog() {
     showDialog(
@@ -92,7 +126,6 @@ class _RegisterPageState extends State<RegisterPage> {
     Future.delayed(const Duration(milliseconds: 1500), () {
       Navigator.of(context, rootNavigator: true).pop();
 
-      // Use a post-frame callback to navigate
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacementNamed('/editprofile', arguments: {
           'name': name,
@@ -102,16 +135,48 @@ class _RegisterPageState extends State<RegisterPage> {
     });
   }
 
-
   bool _validateEmail(String em) {
     final RegExp emailRegex =
-    RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$');
+        RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$');
     return emailRegex.hasMatch(em);
+  }
+
+  Future<void> _registerUser() async {
+    setState(() {
+      _isLoading = true;
+      _registerError = null;
+    });
+
+    try {
+      bool success = await register(
+        name: name.trim(),
+        username: username.trim(),
+        password: password,
+        email: email.trim(),
+        gender: genders.entries.firstWhere((e) => e.value).key,
+        dob: "$year-$month-$day",
+      );
+
+      if (success) {
+        _showSuccessDialog();
+      } else {
+        setState(() {
+          _registerError = "Registration failed. Please try again.";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _registerError = "Error: ${e.toString()}";
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _onRegister() {
     setState(() {
       nameError = usernameError = passwordError = emailError = genderError = null;
+      _registerError = null;
 
       if (name.trim().isEmpty) {
         nameError = "Please fill this";
@@ -138,8 +203,7 @@ class _RegisterPageState extends State<RegisterPage> {
         .any((e) => e != null)) {
       return;
     }
-
-    _showSuccessDialog();
+    _registerUser();
   }
 
   Widget _buildInputField({
@@ -169,11 +233,11 @@ class _RegisterPageState extends State<RegisterPage> {
             suffixIcon: suffixIcon,
             hintText: hintText,
             hintStyle:
-            TextStyle(color: pink.withOpacity(0.4), fontSize: 16),
+                TextStyle(color: pink.withOpacity(0.4), fontSize: 16),
             filled: true,
             fillColor: Colors.white,
             contentPadding:
-            const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: const BorderSide(color: Colors.black12, width: 1.5),
@@ -241,6 +305,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     value: genders[gender],
                     onChanged: (val) {
                       setState(() {
+                        genders.updateAll((key, _) => false);
                         genders[gender] = val ?? false;
                       });
                     },
@@ -315,7 +380,7 @@ class _RegisterPageState extends State<RegisterPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding:
-          const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -364,7 +429,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 20),
               _buildInputField(
                 label: 'Email',
-                hintText: 'enter you email here',
+                hintText: 'enter your email here',
                 icon: Icons.mail,
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (val) => email = val,
@@ -395,8 +460,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   Checkbox(
                     value: rememberMe,
                     activeColor: gray,
-                    onChanged: (val) => setState(() => rememberMe = val ?? false),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                    onChanged: (val) =>
+                        setState(() => rememberMe = val ?? false),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5)),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.compact,
                   ),
@@ -407,20 +474,34 @@ class _RegisterPageState extends State<RegisterPage> {
                 ],
               ),
               const SizedBox(height: 30),
+              if (_registerError != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Text(
+                    _registerError!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _onRegister,
+                  onPressed: _isLoading ? null : _onRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: pink,
                     padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30)),
                     elevation: 6,
                   ),
-                  child: const Text(
-                    'Register',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.white),
-                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Register',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20,
+                              color: Colors.white),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),
